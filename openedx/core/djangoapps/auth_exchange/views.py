@@ -6,6 +6,7 @@ The following are currently implemented:
     2. LoginWithAccessTokenView:
        1st party (open-edx) OAuth 2.0 access token -> session cookie
 """
+import logging
 import django.contrib.auth as auth
 import social_django.utils as social_utils
 from django.conf import settings
@@ -26,6 +27,7 @@ from openedx.core.djangoapps.oauth_dispatch.api import create_dot_access_token
 from openedx.core.djangoapps.safe_sessions.middleware import mark_user_change_as_expected
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 
+log = logging.getLogger("auth_exchange")
 
 class AccessTokenExchangeBase(APIView):
     """
@@ -141,8 +143,10 @@ class LoginWithAccessTokenView(APIView):
         # The login method assumes the backend path had been previously stored in request.user.backend
         # in the 'authenticate' call.  However, not all authentication providers do so.
         # So we explicitly populate the request.user.backend field here.
-
+        log.info("=====================")
+        log.info(request.POST)
         if not hasattr(request.user, 'backend'):
+            log.info("not backend")
             request.user.backend = self._get_path_of_arbitrary_backend_for_user(request.user)
 
         #if not self._is_grant_password(request.auth):
@@ -152,6 +156,8 @@ class LoginWithAccessTokenView(APIView):
         #    })
 
         login(request, request.user)  # login generates and stores the user's cookies in the session
+        log.info("login called")
         response = HttpResponse(status=204)  # cookies stored in the session are returned with the response
         mark_user_change_as_expected(request.user.id)
+        log.info("response: {}".format(response))
         return response
